@@ -1,6 +1,8 @@
 # Import necessary modules
 import environ
 from pathlib import Path
+# Imports necessary for Render deployment
+import os
 
 # Initialize environment variables which have senstive info like API Key
 env = environ.Env()
@@ -18,7 +20,7 @@ SECRET_KEY = 'django-insecure-pscg0)329d=82_tlpucfx#q@&5=^^*dtaz2k&m+lm0qc!#f-b-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['yourdomain.onrender.com', 'localhost', '127.0.0.1']
 
 # Custom user model
 AUTH_USER_MODEL = 'events.CustomUser'
@@ -101,6 +103,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
