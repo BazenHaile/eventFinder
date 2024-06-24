@@ -1,0 +1,26 @@
+{% extends 'events/base.html' %}
+
+{% block content %}
+<h2>{{ event.name }}</h2>
+<p><strong>Category:</strong> {{ event.get_category_display }}</p>
+<p><strong>Date:</strong> {{ event.start_time }} - {{ event.end_time }}</p>
+<p><strong>Location:</strong> {{ event.location }}</p>
+
+<button class="btn btn-primary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#eventDescription" aria-expanded="false" aria-controls="eventDescription">
+    Toggle Description
+</button>
+
+<div class="collapse" id="eventDescription">
+    <div class="card card-body">
+        {{ event.description }}
+    </div>
+</div>
+
+{% if user == event.organizer or perms.events.can_manage_all_events %}
+<div class="mt-3">
+    <a href="{% url 'event_update' event.pk %}" class="btn btn-secondary">Edit Event</a>
+    <a href="{% url 'event_delete' event.pk %}" class="btn btn-danger">Delete Event</a>
+</div>
+{% endif %}
+
+{% endblock %}

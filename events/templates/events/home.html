@@ -1,0 +1,52 @@
+{% extends 'events/base.html' %}
+{% load static %}
+
+{% block title %}Home - EventFinder{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center bg-light p-5 rounded-3">
+    <h1 class="display-4">Welcome to EventFinder!</h1>
+    <p class="lead">Discover, create, and join exciting events in your area.</p>
+    <hr class="my-4">
+    <p>Whether you're looking for concerts, workshops, or community gatherings, EventFinder has you covered.</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'event_list' %}" role="button">Browse Events</a>
+    {% if not user.is_authenticated %}
+    <a class="btn btn-outline-secondary btn-lg" href="{% url 'signup' %}" role="button">Sign Up</a>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <h3><i class="fas fa-search"></i> Discover</h3>
+        <p>Find events that match your interests. Use our advanced search to filter by category, date, or location.</p>
+    </div>
+    <div class="col-md-4">
+        <h3><i class="fas fa-calendar-plus"></i> Create</h3>
+        <p>Organizing an event? Use our platform to create and promote your event to a wide audience.</p>
+    </div>
+    <div class="col-md-4">
+        <h3><i class="fas fa-users"></i> Connect</h3>
+        <p>Meet like-minded people, make new friends, and build your network through shared experiences.</p>
+    </div>
+</div>
+
+{% if upcoming_events %}
+<div class="mt-5">
+    <h2>Upcoming Events</h2>
+    <div class="row">
+        {% for event in upcoming_events %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ event.name }}</h5>
+                    <p class="card-text">{{ event.description|truncatewords:20 }}</p>
+                    <p class="card-text"><small class="text-muted">{{ event.start_time|date:"F d, Y" }}</small></p>
+                    <a href="{% url 'event_detail' event.pk %}" class="btn btn-sm btn-outline-primary">Learn More</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'events/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Event Map</h2>
+    <div id="map" style="height: 400px;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var eventsJson = JSON.parse('{{ events_json|escapejs }}');
+   
+
+    var map = L.map('map').setView([53.349805, -6.26031], 11); // Set initial view to Dublin
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    if (eventsJson && eventsJson.length > 0) {
+        eventsJson.forEach(function(event) {
+            var lat = event.fields.latitude;
+            var lng = event.fields.longitude;
+            var name = event.fields.name;
+
+            console.log("Event:", name, "Lat:", lat, "Lng:", lng);
+
+            if (lat && lng) {
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup(name);
+            }
+        });
+    } else {
+        console.log("No events data available");
+    }
+});
+</script>
+{% endblock %}
