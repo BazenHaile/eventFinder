@@ -1,30 +1,36 @@
-# Import necessary modules from Django and this project files
+# This file contains the 'views' - they control what happens when a user visits a page
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.forms import UserCreationForm, PasswordResetForm
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib import messages as django_messages
+from django.core.mail import send_mail
 from django.core.serializers import serialize
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView, DetailView, ListView
+from .models import Event, Message
+from .forms import SignUpForm, UserUpdateForm, EventSearchForm
+from .forms import ComposeMessageForm
+from .utils import geocode_location
+from .forms import EventForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
 from django.utils import timezone
-from .models import Event, Message
-from .forms import SignUpForm, UserUpdateForm, EventSearchForm, ComposeMessageForm, EventForm
-from .utils import geocode_location
 import json
 
-# This function renders the event map page
+# This function handles the event map page
 def event_map(request):
     # Get all events from the database
     events = Event.objects.all()
-    # Convert events to JSON format for use in JavaScript
+    # Convert events to JSON format (for use in JavaScript)
     events_json = serialize('json', events, fields=('name', 'latitude', 'longitude'))
-    # Render the event map page with the events data
+    # Render the map page with the events data
     return render(request, 'events/event_map.html', {'events_json': json.dumps(json.loads(events_json))})
 
-# This class handles user sign-up
+# This class handles user sign up
 class SignUpView(CreateView):
     form_class = SignUpForm
     template_name = 'events/signup.html'
@@ -32,56 +38,47 @@ class SignUpView(CreateView):
 
     # This method is called when valid form data has been POSTed
     def form_valid(self, form):
-        # Save the new user
         response = super().form_valid(form)
-        # Authenticate and login the user
-        user = authenticate(username=form.cleaned_data['username'],
-                            password=form.cleaned_data['password1'])
+        # Log the user in after they sign up
+        user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password1'])
         login(self.request, user)
         return response
 
-# This function handles the user profile view
+# This function handles the user profile page
 @login_required  # This decorator ensures only logged-in users can access this view
 def profile_view(request):
     if request.method == 'POST':
-        # If it's a POST request, process the form data
+        # If the request is POST, process the form data
         form = UserUpdateForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile has been updated!')
             return redirect('profile')
     else:
-        # If it's a GET request, show the form
+        # If the request is GET, show the form
         form = UserUpdateForm(instance=request.user)
     return render(request, 'events/profile.html', {'form': form})
 
-# This function renders the home page
+# This function handles the home page
 def home(request):
-    # Get the 3 most recent upcoming events
+    # Get the next 3 upcoming events
     upcoming_events = Event.objects.filter(start_time__gte=timezone.now()).order_by('start_time')[:3]
     return render(request, 'events/home.html', {'upcoming_events': upcoming_events})
 
-# This function shows the user's inbox
-@login_required
-def user_inbox(request):
-    # Get all messages for the current user
-    messages = Message.objects.filter(receiver=request.user)
-    return render(request, 'events/inbox.html', {'messages': messages})
-
-# This function shows the user's inbox (non-archived messages)
+# This function handles the user's inbox
 @login_required
 def inbox(request):
-    # Get non-archived messages for the current user, sorted by most recent
+    # Get all unarchived messages for the current user, ordered by most recent first
     messages = Message.objects.filter(receiver=request.user, archived=False).order_by('-sent_at')
     return render(request, 'events/inbox.html', {'messages': messages})
 
-# This function shows a specific message
+# This function handles viewing a single message
 @login_required
 def view_message(request, message_id):
-    # Get the specific message or return a 404 error if not found
+    # Get the message or return a 404 error if not found
     message = get_object_or_404(Message, id=message_id, receiver=request.user)
     if not message.read:
-        # Mark the message as read if it wasn't already
+        # Mark the message as read
         message.read = True
         message.save()
     return render(request, 'events/view_message.html', {'message': message})
@@ -90,7 +87,6 @@ def view_message(request, message_id):
 @login_required
 def compose_message(request):
     if request.method == 'POST':
-        # If it's a POST request, process the form data
         form = ComposeMessageForm(request.POST)
         if form.is_valid():
             message = form.save(commit=False)
@@ -99,33 +95,31 @@ def compose_message(request):
             django_messages.success(request, 'Message sent successfully.')
             return redirect('inbox')
     else:
-        # If it's a GET request, show the form
         form = ComposeMessageForm()
     return render(request, 'events/compose_message.html', {'form': form})
 
 # This function handles archiving a message
 @login_required
 def archive_message(request, message_id):
-    # Get the specific message or return a 404 error if not found
     message = get_object_or_404(Message, id=message_id, receiver=request.user)
     message.archived = True
     message.save()
     django_messages.success(request, 'Message archived.')
     return redirect('inbox')
 
-# This class handles listing events
+# This class handles listing all events
 class EventListView(ListView):
     model = Event
     template_name = 'events/event_list.html'
     context_object_name = 'events'
     paginate_by = 10  # Show 10 events per page
 
-    # This method is used to filter and order the events
     def get_queryset(self):
+        # Start with all events
         queryset = Event.objects.all()
         form = EventSearchForm(self.request.GET)
         if form.is_valid():
-            # Apply filters based on the search form
+            # Filter events based on search criteria
             query = form.cleaned_data.get('query')
             category = form.cleaned_data.get('category')
             start_date = form.cleaned_data.get('start_date')
@@ -146,13 +140,12 @@ class EventListView(ListView):
                 queryset = queryset.filter(location__icontains=location)
         return queryset.order_by('start_time')
 
-    # This method adds the search form to the context
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = EventSearchForm(self.request.GET)
         return context
 
-# This class handles showing details of a specific event
+# This class handles displaying details of a single event
 class EventDetailView(DetailView):
     model = Event
     template_name = 'events/event_detail.html'
@@ -165,10 +158,10 @@ class EventCreateView(LoginRequiredMixin, CreateView):
     template_name = 'events/event_form.html'
     success_url = reverse_lazy('event_list')
 
-    # This method is called when valid form data has been POSTed
     def form_valid(self, form):
         form.instance.organizer = self.request.user
         location = form.cleaned_data.get('location')
+        # Get latitude and longitude for the location
         lat, lng = geocode_location(location)
         form.instance.latitude = lat
         form.instance.longitude = lng
@@ -181,14 +174,14 @@ class EventUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = 'events/event_form.html'
     success_url = reverse_lazy('event_list')
 
-    # This method checks if the user has permission to update the event
     def test_func(self):
+        # Check if the current user is the event organizer or has permission to manage all events
         event = self.get_object()
         return self.request.user == event.organizer or self.request.user.has_perm('events.can_manage_all_events')
 
-    # This method is called when valid form data has been POSTed
     def form_valid(self, form):
         location = form.cleaned_data.get('location')
+        # Update latitude and longitude if location changed
         lat, lng = geocode_location(location)
         form.instance.latitude = lat
         form.instance.longitude = lng
@@ -200,7 +193,7 @@ class EventDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     template_name = 'events/event_confirm_delete.html'
     success_url = reverse_lazy('event_list')
 
-    # This method checks if the user has permission to delete the event
     def test_func(self):
+        # Check if the current user is the event organizer or has permission to manage all events
         event = self.get_object()
         return self.request.user == event.organizer or self.request.user.has_perm('events.can_manage_all_events')

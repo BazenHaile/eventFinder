@@ -24,7 +24,7 @@ EventFinder is a Django-based web application that allows users to discover, cre
 - pip (Python package manager)
 
 ## Installation
-1. Clone the repository: XXXXXX
+1. Clone the repository: https://github.com/BazenHaile/eventfinder.git
 2. Create a virtual environment and activate it:
 python -m venv myenv
 source myenv/bin/activate  # On Windows use myenv\Scripts\activate

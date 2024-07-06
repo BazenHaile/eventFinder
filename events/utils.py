@@ -1,19 +1,25 @@
-# Import necessary modules
+# This file contains utility functions used across the application
+
 import requests
 from django.conf import settings
 
-# Function to convert a location name into latitude and longitude coordinates
 def geocode_location(location):
+    """
+    This function takes a location name and returns its latitude and longitude.
+    It uses the OpenCage Geocoding API to convert addresses into geographic coordinates.
+    """
+    
     # Get the API key from the project settings
     api_key = settings.OPENCAGE_API_KEY
-    # Base URL for the OpenCage Geocoding API
+    
+    # The base URL for the OpenCage Geocoding API
     base_url = "https://api.opencagedata.com/geocode/v1/json"
     
-    # Prepare the parameters for the API request
+    # Parameters for the API request
     params = {
-        'q': location,  # The location to geocode
-        'key': api_key,  # Your API key
-        'limit': 1,  # Limit to one result
+        'q': location,  # The location we want to geocode
+        'key': api_key,  # Our API key
+        'limit': 1,  # We only want the top result
     }
     
     # Send a GET request to the API

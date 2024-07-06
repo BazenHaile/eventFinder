@@ -4,38 +4,34 @@
 {% block content %}
 <div class="container mt-5">
     <h2>Event Map</h2>
+    <!-- This div will contain the map -->
     <div id="map" style="height: 400px;"></div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var eventsJson = JSON.parse('{{ events_json|escapejs }}');
-   
+    // Parse the JSON string of events passed from the view
+    var eventsJson = '{{ events_json|safe }}';
+    var events = JSON.parse(eventsJson);
 
-    var map = L.map('map').setView([53.349805, -6.26031], 11); // Set initial view to Dublin
-
+    // Initialize the map centered on Dublin, Ireland
+    var map = L.map('map').setView([53.349805, -6.26031], 11);
+    
+    // Add OpenStreetMap tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
-
-    if (eventsJson && eventsJson.length > 0) {
-        eventsJson.forEach(function(event) {
-            var lat = event.fields.latitude;
-            var lng = event.fields.longitude;
-            var name = event.fields.name;
-
-            console.log("Event:", name, "Lat:", lat, "Lng:", lng);
-
-            if (lat && lng) {
-                L.marker([lat, lng]).addTo(map)
-                    .bindPopup(name);
-            }
-        });
-    } else {
-        console.log("No events data available");
-    }
-});
+    
+    // Loop through each event and add a marker to the map
+    events.forEach(function(event) {
+        var lat = event.fields.latitude;
+        var lng = event.fields.longitude;
+        var name = event.fields.name;
+        if (lat && lng) {
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup(name);  // Clicking on a marker will show the event name
+        }
+    });
 </script>
 {% endblock %}
