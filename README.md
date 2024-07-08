@@ -1,6 +1,6 @@
 # EventFinder
 
-EventFinder is a Django-based web application that allows users to discover, create, and manage events. Users can also send messages to each other about events, making it a comprehensive platform for event organization and networking.
+EventFinder is a Django-based web application that allows users to discover, create, and manage events. Users can also send messages to each other about events, making it a comprehensive platform for event organization and networking. This application is now live in render at the address https://eventfinder-spjl.onrender.com
 
 ## Features
 - User authentication (sign up, log in, log out)
